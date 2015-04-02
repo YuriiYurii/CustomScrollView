@@ -28,9 +28,8 @@ public class HorizontalScrollView extends ViewGroup {
         int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
-            int childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
-            int childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
-            child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+            child.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
+                    MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
             if (parentHeight < child.getMeasuredHeight()) {
                 parentHeight = child.getMeasuredHeight();
                 mMaxChildIndex = i;
@@ -85,7 +84,7 @@ public class HorizontalScrollView extends ViewGroup {
         private boolean canScroll(int offset) {
             return getChildAt(0).getLeft() + offset < getPaddingLeft()
                     && getChildAt(getChildCount() - 1).getRight() + offset
-                    >(getRight() - getLeft()) - getPaddingRight();
+                    > (getRight() - getLeft()) - getPaddingRight();
         }
 
         private boolean touchInChild(float x, float y) {
