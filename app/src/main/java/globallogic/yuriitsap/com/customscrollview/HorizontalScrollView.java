@@ -14,14 +14,12 @@ public class HorizontalScrollView extends ViewGroup {
 
     private static final String TAG = "HorizontalScrollView";
     private GestureDetector mGestureDetector;
-    private GestureDetector.SimpleOnGestureListener mGestureListener;
     private int mMaxChildIndex = 0;
 
     public HorizontalScrollView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        mGestureListener = new OwnGestureListener();
-        mGestureDetector = new GestureDetector(getContext(), mGestureListener);
+        mGestureDetector = new GestureDetector(getContext(), new OwnGestureListener());
     }
 
     @Override
