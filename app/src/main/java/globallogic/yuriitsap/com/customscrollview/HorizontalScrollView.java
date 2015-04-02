@@ -15,6 +15,7 @@ public class HorizontalScrollView extends ViewGroup {
     private static final String TAG = "HorizontalScrollView";
     private GestureDetector mGestureDetector;
     private GestureDetector.SimpleOnGestureListener mGestureListener;
+    private int mMaxChildIndex = 0;
 
     public HorizontalScrollView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -27,15 +28,19 @@ public class HorizontalScrollView extends ViewGroup {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
         int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
-        int maxChildHeight = parentHeight;
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
             int childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
             int childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
             child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
-            maxChildHeight = Math.max(maxChildHeight, child.getMeasuredHeight());
+            if (parentHeight < child.getMeasuredHeight()) {
+                parentHeight = child.getMeasuredHeight();
+                mMaxChildIndex = i;
+
+            }
+
         }
-        setMeasuredDimension(parentWidth, maxChildHeight * 2);
+        setMeasuredDimension(parentWidth, parentHeight * 2);
     }
 
     @Override
@@ -59,20 +64,17 @@ public class HorizontalScrollView extends ViewGroup {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                break;
-            case MotionEvent.ACTION_MOVE:
-                return mGestureDetector.onTouchEvent(event);
-        }
-        return true;
+        return mGestureDetector.onTouchEvent(event);
     }
 
     private class OwnGestureListener extends GestureDetector.SimpleOnGestureListener {
 
         @Override
         public boolean onDown(MotionEvent e) {
-            return false;
+            if (touchInChild(e.getX(), e.getY())) {
+                return false;
+            }
+            return true;
         }
 
         @Override
@@ -94,6 +96,12 @@ public class HorizontalScrollView extends ViewGroup {
         private boolean intersectsRightBorder(int offset) {
             return getChildAt(getChildCount() - 1).getRight() + offset
                     < (getRight() - getLeft()) - getPaddingRight();
+        }
+
+        private boolean touchInChild(float x, float y) {
+            return ((x > getChildAt(0).getLeft() && x < getChildAt(getChildCount() - 1).getRight())
+                    && y > getChildAt(mMaxChildIndex).getTop() && y < getChildAt(mMaxChildIndex)
+                    .getBottom());
         }
     }
 }
