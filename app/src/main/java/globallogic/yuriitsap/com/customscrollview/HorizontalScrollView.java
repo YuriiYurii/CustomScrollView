@@ -36,9 +36,7 @@ public class HorizontalScrollView extends ViewGroup {
             if (parentHeight < child.getMeasuredHeight()) {
                 parentHeight = child.getMeasuredHeight();
                 mMaxChildIndex = i;
-
             }
-
         }
         setMeasuredDimension(parentWidth, parentHeight * 2);
     }
@@ -71,17 +69,14 @@ public class HorizontalScrollView extends ViewGroup {
 
         @Override
         public boolean onDown(MotionEvent e) {
-            if (touchInChild(e.getX(), e.getY())) {
-                return false;
-            }
-            return true;
+            return !touchInChild(e.getX(), e.getY());
         }
 
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
             requestDisallowInterceptTouchEvent(true);
             int offset = (int) (e2.getX() - e2.getX() < 0 ? distanceX : -distanceX);
-            if (!(intersectsLeftBorder(offset) || intersectsRightBorder(offset))) {
+            if (canScroll(offset)) {
                 for (int i = getChildCount() - 1; i >= 0; i--) {
                     getChildAt(i).offsetLeftAndRight(offset);
                 }
@@ -89,13 +84,10 @@ public class HorizontalScrollView extends ViewGroup {
             return true;
         }
 
-        private boolean intersectsLeftBorder(int offset) {
-            return getChildAt(0).getLeft() + offset > getPaddingLeft();
-        }
-
-        private boolean intersectsRightBorder(int offset) {
-            return getChildAt(getChildCount() - 1).getRight() + offset
-                    < (getRight() - getLeft()) - getPaddingRight();
+        private boolean canScroll(int offset) {
+            return getChildAt(0).getLeft() + offset < getPaddingLeft()
+                    && getChildAt(getChildCount() - 1).getRight() + offset
+                    >(getRight() - getLeft()) - getPaddingRight();
         }
 
         private boolean touchInChild(float x, float y) {
