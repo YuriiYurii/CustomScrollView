@@ -21,35 +21,10 @@
         <globallogic.yuriitsap.com.customscrollview.HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:id="@+id/horizontal_scroller"
                 android:paddingTop="20dp">
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <Button android:text="@string/default_button" android:onClick="showToast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
         </globallogic.yuriitsap.com.customscrollview.HorizontalScrollView>
+
         <Button android:text="@string/default_button" android:onClick="showToast"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
@@ -68,6 +43,16 @@
         <Button android:text="@string/default_button" android:onClick="showToast"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
+        <Button android:text="@string/default_button" android:onClick="showToast"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        <Button android:text="@string/default_button" android:onClick="showToast"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        <Button android:text="@string/default_button" android:onClick="showToast"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
     </LinearLayout>
 
 </ScrollView>
