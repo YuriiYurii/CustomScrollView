@@ -2,7 +2,6 @@ package globallogic.yuriitsap.com.customscrollview;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,9 +13,9 @@ import android.widget.Scroller;
  */
 public class HorizontalScrollView extends ViewGroup {
 
+    private int OPPOSITE_MASK = 0b11111111_11111111_11111111_11111110;
     private static final String TAG = "HorizontalScrollView";
     private GestureDetector mGestureDetector;
-    private int mMaxChildIndex = 0;
     private Scroller mScroller;
 
     public HorizontalScrollView(Context context, AttributeSet attrs) {
@@ -24,11 +23,6 @@ public class HorizontalScrollView extends ViewGroup {
 
         mScroller = new Scroller(getContext());
         mGestureDetector = new GestureDetector(getContext(), new OwnGestureListener());
-    }
-
-    @Override
-    public void scrollBy(int x, int y) {
-        super.scrollBy(x, y);
     }
 
     @Override
@@ -41,7 +35,6 @@ public class HorizontalScrollView extends ViewGroup {
                     MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
             if (parentHeight < child.getMeasuredHeight()) {
                 parentHeight = child.getMeasuredHeight();
-                mMaxChildIndex = i;
             }
         }
         setMeasuredDimension(parentWidth, parentHeight * 2);
@@ -61,25 +54,6 @@ public class HorizontalScrollView extends ViewGroup {
         }
     }
 
-    private void showEvent(MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                Log.e(TAG, "ACTION_DOWN x = " + event.getX());
-                break;
-            case MotionEvent.ACTION_MOVE:
-                Log.e(TAG, "ACTION_MOVE x = " + event.getX());
-                break;
-            case MotionEvent.ACTION_UP:
-                Log.e(TAG, "ACTION_UP x = " + event.getX());
-                break;
-            case MotionEvent.ACTION_CANCEL:
-                Log.e(TAG, "ACTION_UP x = " + event.getX());
-                break;
-
-        }
-
-    }
-
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         return mGestureDetector.onTouchEvent(ev);
@@ -94,11 +68,75 @@ public class HorizontalScrollView extends ViewGroup {
     private class OwnGestureListener extends GestureDetector.SimpleOnGestureListener {
 
         private boolean parentInterceptionAllowed;
+        private int firstPoint;
 
         @Override
         public boolean onDown(MotionEvent e) {
             parentInterceptionAllowed = true;
+            if (!mScroller.isFinished()) {
+                mScroller.forceFinished(true);
+            }
             return false;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            disableVerticalScrolling();
+            scrollBy((int) distanceX ^ OPPOSITE_MASK, 0);
+            return true;
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            mScroller.fling((int) e2.getX(), 0, (int) velocityX, 0, getChildAt(0).getLeft(),
+                    getChildAt(getChildCount() - 1).getRight(), 0, 0);
+            firstPoint = (int) e2.getX();
+            post(new Runnable() {
+                @Override
+                public void run() {
+                    if (mScroller.computeScrollOffset()) {
+                        scrollBy(mScroller.getCurrX() - firstPoint, 0);
+                        firstPoint = mScroller.getCurrX();
+                        postDelayed(this, 50);
+
+                    }
+                }
+            });
+            return true;
+        }
+
+        private void scrollBy(int offsetX, int offsetY) {
+            if (offsetY == 0 && !handleFastScrolling(offsetX)) {
+                scrollHorizontaly(offsetX);
+            }
+        }
+
+        private void scrollHorizontaly(int offset) {
+            for (int i = getChildCount() - 1; i >= 0; i--) {
+                getChildAt(i).offsetLeftAndRight(offset);
+            }
+            invalidate();
+        }
+
+        private boolean handleFastScrollingLeftDirection(int offset) {
+            if (getChildAt(0).getLeft() + offset > getPaddingLeft()) {
+                scrollHorizontaly(getChildAt(0).getLeft() ^ OPPOSITE_MASK);
+                return true;
+            }
+            return false;
+        }
+
+        private boolean handleFastScrollingRightDirection(int offset) {
+            if (getChildAt(getChildCount() - 1).getRight() + offset < getRight()) {
+                scrollHorizontaly(getRight() - getChildAt(getChildCount() - 1).getRight());
+                return true;
+            }
+            return false;
+        }
+
+        private boolean handleFastScrolling(int offset) {
+            return handleFastScrollingLeftDirection(offset) || handleFastScrollingRightDirection(
+                    offset);
         }
 
         private void disableVerticalScrolling() {
@@ -106,67 +144,6 @@ public class HorizontalScrollView extends ViewGroup {
                 requestDisallowInterceptTouchEvent(true);
                 parentInterceptionAllowed = false;
             }
-
-        }
-
-
-        @Override
-        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-            disableVerticalScrolling();
-            if (canScroll(-distanceX)) {
-                for (int i = getChildCount() - 1; i >= 0; i--) {
-                    getChildAt(i).offsetLeftAndRight((int) -distanceX);
-                }
-            }
-            Log.e(TAG,"Last child X = "+getChildAt(getChildCount()-1).getRight());
-            invalidate();
-            return true;
-        }
-
-        private boolean leftBorderIsReached() {
-            return getChildAt(0).getLeft() == getPaddingLeft();
-        }
-
-        private boolean rightBorderIsReached() {
-            return getChildAt(getChildCount() - 1).getRight()
-                    == (getRight() - getLeft()) - getPaddingRight();
-        }
-
-        private void scrollToEnd() {
-            if (!rightBorderIsReached()) {
-                Log.e(TAG, "scrollToEnd");
-                for (int i = getChildCount() - 1; i >= 0; i--) {
-                    getChildAt(i).offsetLeftAndRight(
-                            getPaddingRight() - getChildAt(getChildCount() - 1).getRight());
-                }
-            }
-
-
-        }
-
-        private void scrollToStart() {
-            if (!leftBorderIsReached()) {
-                Log.e(TAG, "scrollToStart");
-                for (int i = getChildCount() - 1; i >= 0; i--) {
-                    getChildAt(i).offsetLeftAndRight(Math.abs(getChildAt(0).getLeft()));
-                }
-            }
-        }
-
-
-        private boolean canScroll(float offset) {
-
-            return getChildAt(0).getLeft() + offset < getPaddingLeft()
-                    && getChildAt(getChildCount() - 1).getRight() + offset
-                    > (getRight() - getLeft()) - getPaddingRight();
-        }
-
-
-        @Deprecated
-        private boolean touchInChild(float x, float y) {
-            return ((x > getChildAt(0).getLeft() && x < getChildAt(getChildCount() - 1).getRight())
-                    && y > getChildAt(mMaxChildIndex).getTop() && y < getChildAt(mMaxChildIndex)
-                    .getBottom());
         }
     }
 }
