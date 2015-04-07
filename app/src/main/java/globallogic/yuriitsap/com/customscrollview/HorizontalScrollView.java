@@ -2,6 +2,7 @@ package globallogic.yuriitsap.com.customscrollview;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -69,6 +70,23 @@ public class HorizontalScrollView extends ViewGroup {
         return true;
     }
 
+//    @Override
+//    public void computeScroll() {
+//        if (mScroller.computeScrollOffset()) {
+//            int currentOffset = mScroller.getCurrX();
+//            if (canScroll(currentOffset)) {
+//                Log.e(TAG, "current offset = " + currentOffset);
+//                Log.e(TAG, "mScrollX = " + mScrollX);
+////                mScrollX -= currentOffset;
+//            }
+//        }
+//        super.computeScroll();
+//    }
+
+    private boolean canScroll(int offset) {
+        return mScrollX + offset >= 0 && mScrollX + offset <= mMaxX;
+    }
+
     private class OwnGestureListener extends GestureDetector.SimpleOnGestureListener {
 
         private boolean parentInterceptionAllowed;
@@ -86,19 +104,19 @@ public class HorizontalScrollView extends ViewGroup {
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
             disableVerticalScrolling();
-            scrollHorizontaly((int) -distanceX);
+            scrollHorizontaly((int) distanceX);
             return true;
         }
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            mScroller.fling(mScrollX, 0, (int) -velocityX, 0, 0,
+            mScroller.fling(mScrollX, 0, (int)-velocityX, 0, 0,
                     mMaxX, 0, 0);
             post(mScrollWorker = new Runnable() {
                 @Override
                 public void run() {
                     if (mScroller.computeScrollOffset()) {
-                        scrollHorizontaly(mScrollX - mScroller.getCurrX());
+                        scrollHorizontaly(mScroller.getCurrX()-mScrollX);
                         postOnAnimation(this);
 
                     }
@@ -110,16 +128,13 @@ public class HorizontalScrollView extends ViewGroup {
         private void scrollHorizontaly(int offset) {
             if (canScroll(offset)) {
                 for (int i = getChildCount() - 1; i >= 0; i--) {
-                    getChildAt(i).offsetLeftAndRight(offset);
+                    getChildAt(i).offsetLeftAndRight(-offset);
                 }
-                mScrollX -= offset;
+                mScrollX += offset;
             }
             invalidate();
         }
 
-        private boolean canScroll(int offset) {
-            return mScrollX - offset >= 0 && mScrollX - offset <= mMaxX;
-        }
 
         private void disableVerticalScrolling() {
             if (parentInterceptionAllowed) {
