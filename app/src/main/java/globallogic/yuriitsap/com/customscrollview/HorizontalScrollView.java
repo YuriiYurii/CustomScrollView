@@ -13,16 +13,19 @@ import android.widget.Scroller;
  */
 public class HorizontalScrollView extends ViewGroup {
 
-    private int OPPOSITE_MASK = 0b11111111_11111111_11111111_11111110;
     private static final String TAG = "HorizontalScrollView";
     private GestureDetector mGestureDetector;
     private Scroller mScroller;
+    private Runnable mScrollWorker;
+    private int mScrollX;
+    private int mMaxX;
 
     public HorizontalScrollView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
         mScroller = new Scroller(getContext());
         mGestureDetector = new GestureDetector(getContext(), new OwnGestureListener());
+        mScrollX = 0;
     }
 
     @Override
@@ -52,6 +55,7 @@ public class HorizontalScrollView extends ViewGroup {
                     currentBottom);
             currentLeft = currentRight;
         }
+        mMaxX = getChildAt(getChildCount() - 1).getRight() - getMeasuredWidth();
     }
 
     @Override
@@ -68,13 +72,13 @@ public class HorizontalScrollView extends ViewGroup {
     private class OwnGestureListener extends GestureDetector.SimpleOnGestureListener {
 
         private boolean parentInterceptionAllowed;
-        private int firstPoint;
 
         @Override
         public boolean onDown(MotionEvent e) {
             parentInterceptionAllowed = true;
             if (!mScroller.isFinished()) {
                 mScroller.forceFinished(true);
+                removeCallbacks(mScrollWorker);
             }
             return false;
         }
@@ -82,22 +86,20 @@ public class HorizontalScrollView extends ViewGroup {
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
             disableVerticalScrolling();
-            scrollBy((int) distanceX ^ OPPOSITE_MASK, 0);
+            scrollHorizontaly((int) -distanceX);
             return true;
         }
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            mScroller.fling((int) e2.getX(), 0, (int) velocityX, 0, getChildAt(0).getLeft(),
-                    getChildAt(getChildCount() - 1).getRight(), 0, 0);
-            firstPoint = (int) e2.getX();
-            post(new Runnable() {
+            mScroller.fling(mScrollX, 0, (int) -velocityX, 0, 0,
+                    mMaxX, 0, 0);
+            post(mScrollWorker = new Runnable() {
                 @Override
                 public void run() {
                     if (mScroller.computeScrollOffset()) {
-                        scrollBy(mScroller.getCurrX() - firstPoint, 0);
-                        firstPoint = mScroller.getCurrX();
-                        postDelayed(this, 50);
+                        scrollHorizontaly(mScrollX - mScroller.getCurrX());
+                        postOnAnimation(this);
 
                     }
                 }
@@ -105,38 +107,18 @@ public class HorizontalScrollView extends ViewGroup {
             return true;
         }
 
-        private void scrollBy(int offsetX, int offsetY) {
-            if (offsetY == 0 && !handleFastScrolling(offsetX)) {
-                scrollHorizontaly(offsetX);
-            }
-        }
-
         private void scrollHorizontaly(int offset) {
-            for (int i = getChildCount() - 1; i >= 0; i--) {
-                getChildAt(i).offsetLeftAndRight(offset);
+            if (canScroll(offset)) {
+                for (int i = getChildCount() - 1; i >= 0; i--) {
+                    getChildAt(i).offsetLeftAndRight(offset);
+                }
+                mScrollX -= offset;
             }
             invalidate();
         }
 
-        private boolean handleFastScrollingLeftDirection(int offset) {
-            if (getChildAt(0).getLeft() + offset > getPaddingLeft()) {
-                scrollHorizontaly(getChildAt(0).getLeft() ^ OPPOSITE_MASK);
-                return true;
-            }
-            return false;
-        }
-
-        private boolean handleFastScrollingRightDirection(int offset) {
-            if (getChildAt(getChildCount() - 1).getRight() + offset < getRight()) {
-                scrollHorizontaly(getRight() - getChildAt(getChildCount() - 1).getRight());
-                return true;
-            }
-            return false;
-        }
-
-        private boolean handleFastScrolling(int offset) {
-            return handleFastScrollingLeftDirection(offset) || handleFastScrollingRightDirection(
-                    offset);
+        private boolean canScroll(int offset) {
+            return mScrollX - offset >= 0 && mScrollX - offset <= mMaxX;
         }
 
         private void disableVerticalScrolling() {
